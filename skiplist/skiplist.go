@@ -12,7 +12,7 @@ const (
 )
 
 type SkipList struct {
-	height     int
+	maxHeight  int
 	head       *Node
 	comparator utils.Comparator
 	mu         sync.RWMutex
@@ -20,7 +20,7 @@ type SkipList struct {
 
 func New(comp utils.Comparator) *SkipList {
 	skipList := SkipList{
-		height:     1,
+		maxHeight:  1,
 		head:       newNode(0, kMaxHeight),
 		comparator: comp,
 	}
@@ -37,12 +37,12 @@ func (list *SkipList) Insert(key interface{}) {
 	_, prev := list.findGreaterOrEqual(key)
 	height := list.randomHeight()
 
-	// new node height is greater than list height, then link the head and new node in exceed level
-	if height > list.height {
-		for i := list.height; i < height; i++ {
+	// new node maxHeight is greater than list maxHeight, then link the head and new node in exceed level
+	if height > list.maxHeight {
+		for i := list.maxHeight; i < height; i++ {
 			prev[i] = list.head // prev[i] == nil
 		}
-		list.height = height // update new height
+		list.maxHeight = height // update new maxHeight
 	}
 
 	// link new node in each level
@@ -65,8 +65,8 @@ func (list *SkipList) Contains(key interface{}) bool {
 	return n != nil && list.comparator(n.key, key) == 0
 }
 
-// @description: generate random height for node insertion
-// @return: the random height
+// @description: generate random maxHeight for node insertion
+// @return: the random maxHeight
 // @TODO: why does it look like this?
 
 func (list *SkipList) randomHeight() int {
@@ -86,7 +86,7 @@ func (list *SkipList) randomHeight() int {
 func (list *SkipList) findGreaterOrEqual(key interface{}) (*Node, [kMaxHeight]*Node) {
 	var prev [kMaxHeight]*Node
 	x := list.head
-	level := list.height - 1
+	level := list.maxHeight - 1
 
 	for true {
 		next := x.getNext(level)
@@ -118,7 +118,7 @@ func (list *SkipList) keyIsAfterNode(key interface{}, n *Node) bool {
 
 func (list *SkipList) findLessThan(key interface{}) *Node {
 	x := list.head
-	level := list.height - 1
+	level := list.maxHeight - 1
 
 	for true {
 		// find first greater than key in top level, and then sink down util level0
@@ -142,7 +142,7 @@ func (list *SkipList) findLessThan(key interface{}) *Node {
 
 func (list *SkipList) findLast() *Node {
 	x := list.head
-	level := list.height - 1
+	level := list.maxHeight - 1
 
 	for true {
 		next := x.getNext(level)
@@ -158,4 +158,12 @@ func (list *SkipList) findLast() *Node {
 	}
 
 	return nil
+}
+
+func (list *SkipList) NewIterator() *Iterator {
+	iter := Iterator{
+		list: list,
+	}
+
+	return &iter
 }
