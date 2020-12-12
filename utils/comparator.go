@@ -5,13 +5,16 @@ package utils
 
 type Comparator func(lhs, rhs interface{}) int
 
-func IntComparator(lhs, rhs interface{}) int {
-	l := lhs.(int)
-	r := rhs.(int)
+// @description:
+// @return: +1 if a > b, -1 if a < b, 0 if a == b
+
+func IntComparator(a, b interface{}) int {
+	l := a.(int)
+	r := b.(int)
 
 	switch {
 	case l > r:
-		return 1
+		return +1
 	case l < r:
 		return -1;
 	default:

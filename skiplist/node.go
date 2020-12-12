@@ -1,12 +1,11 @@
 package skiplist
 
-// NOTICE: each node has pointers of other nodes whose num equals level of skip list
+// this is the real-world implementation of skip list based on singly link list which has no need to storage a node twice
+// notice: each node has pointers of other nodes whose num equals level of skip list
 // the 1st pointer links to next node in level 0
 // the 2nd pointer links to next node in level 1
 // the 3th pointer links to next node in level 2
 // ...
-
-// this is the real-world implementation of skip list based on singly link list which has no need to storage a node twice
 
 type Node struct {
 	key  interface{} // key can be any type

@@ -1,3 +1,7 @@
+// This package provide a insert/iteration only implementation of thread-safe skip list.
+// The function of this skip list is limited because original implementation in leveldb cpp version is lock-free, and lock-free skip list algorithm leaves many problems such as memory management unsolved in cpp
+// And in my first version, I use RWMutex to keep it thread-safe
+
 package skiplist
 
 import (
@@ -29,11 +33,13 @@ func New(comp utils.Comparator) *SkipList {
 
 // @description: insert a new key to skip list
 // @param: the key to be inserted in skip list
+// @notice: user cannot insert a key already exists
 
 func (list *SkipList) Insert(key interface{}) {
 	list.mu.Lock(); // write lock
 	defer list.mu.Unlock()
 
+	// the result node is ignored, so DON'T insert a key already exists
 	_, prev := list.findGreaterOrEqual(key)
 	height := list.randomHeight()
 
@@ -159,6 +165,9 @@ func (list *SkipList) findLast() *Node {
 
 	return nil
 }
+
+// @description: get a iterator of this skip list, note that the iterator is invalid, which need to seek
+// @return: the iterator
 
 func (list *SkipList) NewIterator() *Iterator {
 	iter := Iterator{
