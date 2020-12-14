@@ -2,6 +2,9 @@
 // 		UserKey: the key provided by user in Put function
 //		InternalKey: UserKey + SequentialNumber[0:56) for version + SequentialNumber[56:64) for type
 //		LookupKey: the key provided by user in Get function
+//
+// InternalKey:
+//		the actual content in memtable which include UserKey and UserValue, Type and Seq
 
 package internal
 
@@ -50,18 +53,24 @@ func NewInternalKey(seq uint64, valueType ValueType, key, value []byte) *Interna
 func (key *InternalKey) EncodeTo(w io.Writer) error {
 	var err error = nil
 
+	// the binary.Write function write the data in the variable of interface{} into the writer in liitle endian
+	// the internal implementation is based on type switch
 	if err = binary.Write(w, binary.LittleEndian, key.Seq); err != nil {
 		return err
 	}
 	if err = binary.Write(w, binary.LittleEndian, key.Type); err != nil {
 		return err
 	}
+
+	// the length of UserKey must be serialized in internal key
 	if err = binary.Write(w, binary.LittleEndian, int32(len(key.UserKey))); err != nil {
 		return err
 	}
 	if err = binary.Write(w, binary.LittleEndian, key.UserKey); err != nil {
 		return err
 	}
+
+	// the length of UserValue must be serialized in internal key
 	if err = binary.Write(w, binary.LittleEndian, int32(len(key.UserValue))); err != nil {
 		return err
 	}
@@ -79,6 +88,9 @@ func (key *InternalKey) EncodeTo(w io.Writer) error {
 
 func (key *InternalKey) DecodeFrom(r io.Reader) error {
 	var err error
+
+	// the binary.Read function read the data from reader in little endian and put it into a interface{} variable
+	// the internal implementation is based on type switch
 	if err = binary.Read(r, binary.LittleEndian, &key.Seq); err != nil {
 		return err
 	}
