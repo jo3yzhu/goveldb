@@ -23,8 +23,8 @@ func (iter *Iterator) Prev() {
 	iter.index--
 }
 
-// @description: seek to first element >= target using binary search, if no such element, set iterator at len(iter.block.items)
-// @params:
+// @description: seek to first element >= target in one block using binary search by UserKey comparing, if no such element, the iterator will be set at len(iter.block.items)
+// @params: UserKey need to be indexed
 
 func (iter *Iterator) Seek(target interface{}) {
 	left := 0
@@ -33,7 +33,7 @@ func (iter *Iterator) Seek(target interface{}) {
 	// unclosed section
 	for left < right {
 		mid := (left + right) / 2
-		if internal.UserKeyComparator(iter.block.items[left], target) < 0 { // if num[i] < target
+		if internal.UserKeyComparator(iter.block.items[mid].UserKey, target) < 0 { // if num[i] < target
 			left = mid + 1
 		} else {
 			right = mid
@@ -42,7 +42,7 @@ func (iter *Iterator) Seek(target interface{}) {
 
 	// special case
 	if left == len(iter.block.items) - 1 {
-		if internal.InternalKeyComparator(iter.block.items[left], target) < 0 { // if the largest element is smaller than target, not found
+		if internal.UserKeyComparator(iter.block.items[left].UserKey, target) < 0 { // if the largest element is smaller than target, not found
 			left++ // iterator is invalid now
 		}
 	}

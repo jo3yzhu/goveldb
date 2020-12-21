@@ -6,6 +6,7 @@ import (
 	"goveldb/internal"
 )
 
+// A block builder maintains a buffer can be added while Add
 type BlockBuilder struct {
 	buf bytes.Buffer
 	counter uint32
@@ -22,6 +23,7 @@ func (blockbuilder *BlockBuilder) Add(item *internal.InternalKey) {
 }
 
 func (blockbuilder *BlockBuilder) Finish() []byte {
+	// write the counter to buf and return it
 	binary.Write(&blockbuilder.buf, binary.LittleEndian, blockbuilder.counter) // the Writer implementation in bytes.Buffer use pointer receiver
 	return blockbuilder.buf.Bytes()
 }

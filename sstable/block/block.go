@@ -24,9 +24,17 @@ func New(p []byte) *Block {
 		var internalKey internal.InternalKey
 		err := internalKey.DecodeFrom(data)
 		if err != nil {
-			block.items = append(block.items, internalKey)
+			return nil
 		}
+
+		block.items = append(block.items, internalKey)
 	}
 
 	return &block;
+}
+
+func (block *Block) NewIterator() *Iterator {
+	return &Iterator{
+		block: block,
+	}
 }
