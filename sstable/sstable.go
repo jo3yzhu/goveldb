@@ -61,3 +61,28 @@ func Open(fileName string) (*SsTable, error) {
 
 	return &table, nil
 }
+
+func (table *SsTable) NewIterator() *Iterator {
+	return &Iterator{
+		table:     table,
+		indexIter: table.index.NewIterator(),
+	}
+}
+
+func (table *SsTable) Get(target [] byte) ([]byte, error) {
+	iter := table.NewIterator()
+	iter.Seek(target)
+
+	if iter.Valid() {
+		internalKey := iter.InternalKey()
+		if internal.UserKeyComparator(internalKey, target) == 0 {
+			if internalKey.Type == internal.TypeValue {
+				return internalKey.UserValue, nil
+			} else {
+				return nil, internal.ErrDeletion
+			}
+		}
+	}
+
+	return nil, internal.ErrNotFound
+}

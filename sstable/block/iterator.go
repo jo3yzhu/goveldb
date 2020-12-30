@@ -23,7 +23,8 @@ func (iter *Iterator) Prev() {
 	iter.index--
 }
 
-// @description: seek to first element >= target in one block using binary search by UserKey comparing, if no such element, the iterator will be set at len(iter.block.items)
+// @description: seek to first element >= target in one block using binary search by UserKey comparing
+// 				 if such element doesn't exist, the iterator will be set at len(iter.block.items), which makes this iterator invalid
 // @params: UserKey need to be indexed
 
 func (iter *Iterator) Seek(target interface{}) {

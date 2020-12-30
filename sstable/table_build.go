@@ -10,6 +10,8 @@ const (
 	MAX_BLOCK_SIZE = 4 * 1024
 )
 
+// NOTE: SsTable know nothing about sorting, so is TableBuilder
+
 type TableBuilder struct {
 	file               *os.File
 	offset             uint32             // current offset while writing

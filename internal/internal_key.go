@@ -119,6 +119,7 @@ func LookupKey(key []byte) *InternalKey {
 
 // @description: this function is to provide the rule of compare between two UserKey,
 // @return: +1 if a > b, -1 if a < b, 0 if a == b
+// @note: a, b would be compared lexicographically
 
 func UserKeyComparator(a, b interface{}) int {
 	return bytes.Compare(a.([]byte), b.([]byte))
