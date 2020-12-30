@@ -6,10 +6,11 @@ import (
 	"goveldb/internal"
 )
 
-// A block builder maintains a buffer can be added while Add
+// a block contains several internal keys, which are in order by key
+// A block builder in leveldb use restart pointer to compress
 type BlockBuilder struct {
-	buf bytes.Buffer
-	counter uint32
+	buf bytes.Buffer // maintains a buffer can be added while Add
+	counter uint32 // keep it simple, no restart point
 }
 
 func (blockbuilder *BlockBuilder) Reset() {

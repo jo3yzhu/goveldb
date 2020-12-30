@@ -10,9 +10,9 @@ func Test_SsTable(t *testing.T) {
 
 	item := internal.NewInternalKey(1, internal.TypeValue, []byte("123"), []byte("321"))
 	builder.Add(item)
-	item = internal.NewInternalKey(1, internal.TypeValue, []byte("456"), []byte("654"))
+	item = internal.NewInternalKey(2, internal.TypeValue, []byte("456"), []byte("654"))
 	builder.Add(item)
-	item = internal.NewInternalKey(1, internal.TypeValue, []byte("789"), []byte("987"))
+	item = internal.NewInternalKey(3, internal.TypeValue, []byte("789"), []byte("987"))
 	builder.Add(item)
 
 	p := builder.Finish()
