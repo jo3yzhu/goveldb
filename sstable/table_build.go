@@ -68,7 +68,8 @@ func (builder *TableBuilder) flush() {
 		return
 	}
 
-	// get last key added in builder until now
+	// get last key of current data block and store it in the index block
+	// but set the block's handle as its value
 	orgKey := builder.pendingIndexHandle.InternalKey
 	// dismiss value
 	builder.pendingIndexHandle.InternalKey = internal.NewInternalKey(orgKey.Seq, orgKey.Type, orgKey.UserKey, nil)
@@ -89,7 +90,7 @@ func (builder *TableBuilder) Finish() error {
 	var footer Footer
 	footer.IndexHandle = builder.writeBlock(&builder.indexBlockBuilder)
 
-	// write footer
+	// write footer, footer needs to know where index block is
 	_ = footer.EncodeTo(builder.file)
 	_ = builder.file.Close()
 	return nil
