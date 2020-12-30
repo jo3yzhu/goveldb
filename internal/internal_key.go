@@ -4,7 +4,7 @@
 //		LookupKey: the key provided by user in Get function
 //
 // InternalKey:
-//		the actual content in memtable which include UserKey and UserValue, Type and Seq
+//		the actual content in memtable which include UserKey and UserValue, Type and increasing Seq per key
 
 package internal
 
@@ -54,29 +54,24 @@ func (key *InternalKey) EncodeTo(w io.Writer) error {
 	var err error = nil
 
 	// the binary.Write function write the data in the variable of interface{} into the writer in liitle endian
+	write := func(w io.Writer, data interface{}) {
+		if err != nil {
+			return
+		}
+		err = binary.Write(w, binary.LittleEndian, data)
+	}
+
 	// the internal implementation is based on type switch
-	if err = binary.Write(w, binary.LittleEndian, key.Seq); err != nil {
-		return err
-	}
-	if err = binary.Write(w, binary.LittleEndian, key.Type); err != nil {
-		return err
-	}
+	write(w, key.Seq)
+	write(w, key.Type)
 
 	// the length of UserKey must be serialized in internal key
-	if err = binary.Write(w, binary.LittleEndian, int32(len(key.UserKey))); err != nil {
-		return err
-	}
-	if err = binary.Write(w, binary.LittleEndian, key.UserKey); err != nil {
-		return err
-	}
+	write(w, int32(len(key.UserKey)))
+	write(w, key.UserKey)
 
 	// the length of UserValue must be serialized in internal key
-	if err = binary.Write(w, binary.LittleEndian, int32(len(key.UserValue))); err != nil {
-		return err
-	}
-	if err = binary.Write(w, binary.LittleEndian, key.UserValue); err != nil {
-		return err
-	}
+	write(w, int32(len(key.UserValue)))
+	write(w, key.UserValue)
 
 	return err
 }
@@ -90,31 +85,33 @@ func (key *InternalKey) DecodeFrom(r io.Reader) error {
 	var err error
 
 	// the binary.Read function read the data from reader in little endian and put it into a interface{} variable
-	// the internal implementation is based on type switch
-	if err = binary.Read(r, binary.LittleEndian, &key.Seq); err != nil {
-		return err
+	read := func(r io.Reader, data interface{}) {
+		if err != nil {
+			return
+		}
+
+		err = binary.Read(r, binary.LittleEndian, data)
 	}
-	if err = binary.Read(r, binary.LittleEndian, &key.Type); err != nil {
-		return err
-	}
+
+	read(r, &key.Seq)
+	read(r, &key.Type)
+
 	var tmpLen int32
-	if err = binary.Read(r, binary.LittleEndian, &tmpLen); err != nil {
-		return err
-	}
+	read(r, &tmpLen)
+
 	key.UserKey = make([]byte, tmpLen)
-	if err = binary.Read(r, binary.LittleEndian, &key.UserKey); err != nil {
-		return err
-	}
-	if err = binary.Read(r, binary.LittleEndian, &tmpLen); err != nil {
-		return err
-	}
+	read(r, &key.UserKey)
+
+	read(r, &tmpLen)
 	key.UserValue = make([]byte, tmpLen)
-	if err = binary.Read(r, binary.LittleEndian, &key.UserValue); err != nil {
-		return err
-	}
+	read(r, &key.UserValue)
 
 	return err
 }
+
+// @description: k-v pairs of leveldb is stored in skip list by InternalKey, when user need to index certain key, a temporary key need to be constructed,
+// 				 but the key may not exist in skip list and it only provide std::lower_bound-like indexing interface, so the lookup key should maintain max seq and the same key
+// @return: A InternalKey to lookup in skip list
 
 func LookupKey(key []byte) *InternalKey {
 	return NewInternalKey(math.MaxUint64, TypeValue, key, nil)
@@ -129,7 +126,7 @@ func UserKeyComparator(a, b interface{}) int {
 
 // @description: this function is to provide the rule of compare between two InternalKey,
 // @return: +1 if a > b, -1 if a < b
-// 			if a == b, the node with greater is lesser
+// 			if a == b, the node with greater seq is lesser
 
 func InternalKeyComparator(a, b interface{}) int {
 	aKey := a.(*InternalKey)

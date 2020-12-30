@@ -24,7 +24,7 @@ func (memTable *MemTable) Add(seq uint64, valueType internal.ValueType, key, val
 }
 
 func (memTable *MemTable) Get(key []byte) ([]byte, error) {
-	// lookupKey is a key with max sequential number which means it's the smallest one with the same UserKey
+	// lookupKey is a key with max sequential number which means it's the smallest one in nodes with the same UserKey
 	lookupKey := internal.LookupKey(key)
 	iter := memTable.table.NewIterator()
 
@@ -36,7 +36,7 @@ func (memTable *MemTable) Get(key []byte) ([]byte, error) {
 			if internalKey.Type == internal.TypeValue {
 				return internalKey.UserValue, nil
 			} else {
-				return nil, internal.ErrDeletion
+				return nil, internal.ErrDeletion // key doesn't exist
 			}
 		}
 	}
@@ -49,5 +49,7 @@ func (memTable *MemTable) ApproximateMemoryUsage() uint64 {
 }
 
 func (memTable *MemTable) NewIterator() *Iterator {
-	return &Iterator{listIterator: memTable.table.NewIterator()}
+	return &Iterator{
+		listIterator: memTable.table.NewIterator(),
+	}
 }

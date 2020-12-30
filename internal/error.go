@@ -3,6 +3,8 @@ package internal
 import "errors"
 
 var (
-	ErrNotFound = errors.New("Not Found")
-	ErrDeletion = errors.New("Type Deletion")
+	ErrNotFound = errors.New("NotFound")
+	ErrDeletion = errors.New("TypeDeletion")
+	ErrTableFileMagic = errors.New("ErrTableFileMagic")
+	ErrTableTooShort = errors.New("ErrTableTooShort")
 )

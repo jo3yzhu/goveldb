@@ -18,7 +18,7 @@ const (
 type SkipList struct {
 	maxHeight  int
 	head       *Node
-	comparator utils.Comparator
+	comparator utils.Comparator // duck type comparator
 	mu         sync.RWMutex
 }
 
