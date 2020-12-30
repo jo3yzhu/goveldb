@@ -47,7 +47,7 @@ func (iter *Iterator) Seek(target interface{}) {
 		}
 	}
 
-	iter.index = left;
+	iter.index = left
 }
 
 func (iter *Iterator) SeekToFirst() {
