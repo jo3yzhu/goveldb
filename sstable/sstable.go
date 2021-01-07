@@ -75,7 +75,7 @@ func (table *SsTable) Get(target [] byte) ([]byte, error) {
 
 	if iter.Valid() {
 		internalKey := iter.InternalKey()
-		if internal.UserKeyComparator(internalKey, target) == 0 {
+		if internal.UserKeyComparator(internalKey.UserKey, target) == 0 {
 			if internalKey.Type == internal.TypeValue {
 				return internalKey.UserValue, nil
 			} else {
