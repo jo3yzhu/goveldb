@@ -3,7 +3,7 @@ package block
 import (
 	"bytes"
 	"encoding/binary"
-	"goveldb/internal"
+	"github.com/jo3yzhu/goveldb/internal"
 )
 
 // a block contains several internal keys, which are in order by key

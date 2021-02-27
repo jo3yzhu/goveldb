@@ -1,14 +1,14 @@
 package sstable
 
 import (
-	"goveldb/internal"
-	"goveldb/sstable/block"
+	"github.com/jo3yzhu/goveldb/internal"
+	"github.com/jo3yzhu/goveldb/sstable/block"
 	"io"
 	"os"
 )
 
 type SsTable struct {
-	index  *block.Block // sstable has a unique index block indicate where meta and data block is
+	index  *block.Block // sstable has a unique index block indicate where data block is
 	footer Footer
 	file   *os.File
 }

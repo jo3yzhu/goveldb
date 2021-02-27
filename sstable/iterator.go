@@ -1,8 +1,8 @@
 package sstable
 
 import (
-	"goveldb/internal"
-	"goveldb/sstable/block"
+	"github.com/jo3yzhu/goveldb/internal"
+	"github.com/jo3yzhu/goveldb/sstable/block"
 )
 
 type Iterator struct {

@@ -1,6 +1,6 @@
 package skiplist
 
-// this is the real-world implementation of skip list based on singly link list which has no need to storage a node twice
+// this is the real-world implementation of skip list based on singly link list which has no need to store a node twice
 // notice: each node has pointers of other nodes whose num equals level of skip list
 // the 1st pointer links to next node in level 0
 // the 2nd pointer links to next node in level 1
@@ -8,8 +8,8 @@ package skiplist
 // ...
 
 type Node struct {
-	key  interface{} // key can be any type
-	next []*Node     // slice of *Node, both next and down
+	key  interface{} // key can be any type and stored only once
+	next []*Node     // slice of *Node, next[i] means next node in level i
 }
 
 func newNode(key interface{}, height int) *Node {

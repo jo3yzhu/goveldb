@@ -1,11 +1,11 @@
-// This package provide a insert/iteration only implementation of thread-safe skip list.
+// This package provide a insert/iteration only implementation of thread-safe skip list by RWMutex.
 // The function of this skip list is limited because original implementation in leveldb cpp version is lock-free, and lock-free skip list algorithm leaves many problems such as memory management unsolved in cpp
 // And in my first version, I use RWMutex to keep it thread-safe
 
 package skiplist
 
 import (
-	"goveldb/utils"
+	"github.com/jo3yzhu/goveldb/utils"
 	"math/rand"
 	"sync"
 )
@@ -36,7 +36,7 @@ func New(comp utils.Comparator) *SkipList {
 // @notice: user cannot insert a key already exists
 
 func (list *SkipList) Insert(key interface{}) {
-	list.mu.Lock(); // write lock
+	list.mu.Lock() // write lock
 	defer list.mu.Unlock()
 
 	// the result node is ignored, so DON'T insert a key already exists
@@ -46,7 +46,7 @@ func (list *SkipList) Insert(key interface{}) {
 	// new node maxHeight is greater than list maxHeight, then link the head and new node in exceed level
 	if height > list.maxHeight {
 		for i := list.maxHeight; i < height; i++ {
-			prev[i] = list.head // prev[i] == nil
+			prev[i] = list.head // for extra random height, insert it after head node
 		}
 		list.maxHeight = height // update new maxHeight
 	}
@@ -73,7 +73,8 @@ func (list *SkipList) Contains(key interface{}) bool {
 
 // @description: generate random maxHeight for node insertion
 // @return: the random maxHeight
-// @TODO: why does it look like this?
+// @notice: param kBranching 4 indicates that the  indexing performance of this skip list is close to quad-tree
+//          by generating 2 height tower every 4 nodes, 3 height towers every 16 nodes, 4 height tower every 64 nodes and so on
 
 func (list *SkipList) randomHeight() int {
 	height := 1
@@ -84,7 +85,7 @@ func (list *SkipList) randomHeight() int {
 	return height
 }
 
-// @description: find nodes whose key is greater than param key in each level and inserting position for key
+// @description: find nodes whose key is greater than param key in each level and position to insert
 // @param: a key need to be compared while traversing list
 // @return1: the first node whose key greater or equal than param key in level 0
 // @return2: inserting position in each level if a node with param key need to be inserted

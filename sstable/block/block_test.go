@@ -1,7 +1,7 @@
 package block
 
 import (
-	"goveldb/internal"
+	"github.com/jo3yzhu/goveldb/internal"
 	"testing"
 )
 

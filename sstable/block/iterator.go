@@ -1,6 +1,6 @@
 package block
 
-import "goveldb/internal"
+import "github.com/jo3yzhu/goveldb/internal"
 
 type Iterator struct {
 	block *Block

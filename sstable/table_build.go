@@ -1,16 +1,16 @@
 package sstable
 
 import (
-	"goveldb/internal"
-	"goveldb/sstable/block"
+	"github.com/jo3yzhu/goveldb/internal"
+	"github.com/jo3yzhu/goveldb/sstable/block"
 	"os"
 )
 
 const (
-	MAX_BLOCK_SIZE = 4 * 1024
+	MaxBlockSize = 4 * 1024
 )
 
-// NOTE: SsTable know nothing about sorting, so is TableBuilder
+// NOTE: sstable know nothing about sorting, so is TableBuilder
 
 type TableBuilder struct {
 	file               *os.File
@@ -59,7 +59,7 @@ func (builder *TableBuilder) Add(internalKey *internal.InternalKey) {
 	// append data block
 	builder.numEntries++
 	builder.dataBlockBuilder.Add(internalKey)
-	if builder.dataBlockBuilder.CurrentSizeEstimate() > MAX_BLOCK_SIZE {
+	if builder.dataBlockBuilder.CurrentSizeEstimate() > MaxBlockSize {
 		builder.flush()
 	}
 }

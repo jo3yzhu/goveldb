@@ -2,8 +2,8 @@ package version
 
 import (
 	"github.com/hashicorp/golang-lru"
-	"goveldb/internal"
-	"goveldb/sstable"
+	"github.com/jo3yzhu/goveldb/internal"
+	"github.com/jo3yzhu/goveldb/sstable"
 	"sync"
 )
 
@@ -11,7 +11,7 @@ import (
 // TableCache is also
 
 type TableCache struct {
-	mu     sync.Mutex // golang-lru is thread-safe, but need to protect local file in findTable
+	mu     sync.Mutex // golang-lru is thread-safe, but still need to protect local file in findTable
 	dbName string     // a database contains many sstables
 	cache  *lru.Cache // key is file number of sstable, value is *sstable
 }

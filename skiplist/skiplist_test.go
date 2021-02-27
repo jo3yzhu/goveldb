@@ -1,7 +1,7 @@
 package skiplist
 
 import (
-	"goveldb/utils"
+	"github.com/jo3yzhu/goveldb/utils"
 	"testing"
 	"time"
 )

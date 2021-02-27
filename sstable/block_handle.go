@@ -2,7 +2,7 @@ package sstable
 
 import (
 	"encoding/binary"
-	"goveldb/internal"
+	"github.com/jo3yzhu/goveldb/internal"
 	"io"
 )
 
@@ -51,7 +51,7 @@ func (index *IndexBlockHandle) GetBlockHandle() (blockHandle BlockHandle) {
 	return
 }
 
-// In sstable, the footer contains the index to MetaBlockIndex and DataBlockIndex
+// In sstable, the footer must know where MetaIndex and Index are
 
 type Footer struct {
 	MetaIndexHandle BlockHandle

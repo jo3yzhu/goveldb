@@ -1,8 +1,8 @@
 package memtable
 
 import (
-	"goveldb/internal"
-	"goveldb/skiplist"
+	"github.com/jo3yzhu/goveldb/internal"
+	"github.com/jo3yzhu/goveldb/skiplist"
 )
 
 type MemTable struct {

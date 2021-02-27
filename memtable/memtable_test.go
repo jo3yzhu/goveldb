@@ -1,7 +1,7 @@
 package memtable
 
 import (
-	"goveldb/internal"
+	"github.com/jo3yzhu/goveldb/internal"
 	"testing"
 )
 

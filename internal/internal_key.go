@@ -109,7 +109,7 @@ func (key *InternalKey) DecodeFrom(r io.Reader) error {
 	return err
 }
 
-// @description: k-v pairs of leveldb is stored in skip list by InternalKey, when user need to index certain key, a temporary key need to be constructed,
+// @description: k-v pairs of leveldb are stored in skip list by InternalKey, when user need to index certain key, a temporary key need to be constructed,
 // 				 but the key may not exist in skip list and it only provide std::lower_bound-like indexing interface, so the lookup key should maintain max seq and the same key
 // @return: A InternalKey to lookup in skip list
 

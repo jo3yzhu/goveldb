@@ -1,8 +1,8 @@
 package memtable
 
 import (
-	"goveldb/internal"
-	"goveldb/skiplist"
+	"github.com/jo3yzhu/goveldb/internal"
+	"github.com/jo3yzhu/goveldb/skiplist"
 )
 
 type Iterator struct  {
@@ -10,7 +10,7 @@ type Iterator struct  {
 }
 
 func (iter *Iterator) Valid() bool {
-	return iter.listIterator.Valid();
+	return iter.listIterator.Valid()
 }
 
 func (iter *Iterator) InternalKey() *internal.InternalKey {

@@ -2,7 +2,7 @@ package version
 
 import (
 	"encoding/binary"
-	"goveldb/internal"
+	"github.com/jo3yzhu/goveldb/internal"
 	"io"
 	"log"
 	"os"
@@ -64,27 +64,37 @@ func (meta *FileMetaData) DecodeFrom(r io.Reader) error {
 	}
 
 	read(&meta.allowSeeks)
-	read(&meta.number)
 	read(&meta.fileSize)
+	read(&meta.number)
 	if err != nil {
 		return err
 	}
 
+	meta.smallest = new(internal.InternalKey)
 	err = meta.smallest.DecodeFrom(r)
 	if err != nil {
 		return err
 	}
+
+	meta.largest = new(internal.InternalKey)
 	err = meta.largest.DecodeFrom(r)
 	return err
 }
 
+// Version contains a set of sstable file in each level
+// In LevelDB, MVCC is implemented by version set, which is not implemented here
+
 type Version struct {
-	tableCache     *TableCache
+	tableCache     *TableCache // lru cache of sstable files
 	nextFileNumber uint64
 	seq            uint64
-	files          [internal.NumLevels][]*FileMetaData // file meta data in every level
-	compactPointer [internal.NumLevels]*internal.InternalKey
+	files          [internal.NumLevels][]*FileMetaData // file meta data in each level
+	compactPointer [internal.NumLevels]*internal.InternalKey // pre-level key at which the next compaction at that level should start
 }
+
+// @description: encode a version to a writer
+// @param: the writer
+// @return: error if any
 
 func (v *Version) EncodeTo(w io.Writer) error {
 	var err error
@@ -95,8 +105,11 @@ func (v *Version) EncodeTo(w io.Writer) error {
 		err = binary.Write(w, binary.LittleEndian, data)
 	}
 
+	// first encode next file number and seq
 	write(v.nextFileNumber)
 	write(v.seq)
+
+	// write num of files and write file meta data of each file
 	for level := 0; level < internal.NumLevels; level++ {
 		numFiles := len(v.files[level])
 		write(int32(numFiles))
@@ -110,6 +123,10 @@ func (v *Version) EncodeTo(w io.Writer) error {
 
 	return nil
 }
+
+// @description: decode a version from a reader
+// @param: the reader
+// @return: error if any
 
 func (v *Version) DecodeFrom(r io.Reader) error {
 	var err error
@@ -126,6 +143,7 @@ func (v *Version) DecodeFrom(r io.Reader) error {
 	for level := 0; level < internal.NumLevels; level++ {
 		var numFiles int32
 		read(&numFiles)
+		v.files[level] = make([]*FileMetaData, numFiles)
 
 		for i := 0; i < int(numFiles); i++ {
 			var meta FileMetaData
@@ -147,7 +165,13 @@ func New(dbName string) *Version {
 	}
 }
 
+// @description: load a version from a file
+// @param: the database name and file number
+// @return: version and error if any
+
 func Load(dbName string, number uint64) (*Version, error) {
+	// generate file name by file file number
+	// file name formats like "DBName/MANIFEST-000123"
 	fileName := internal.DescriptorFileName(dbName, number)
 	file, err := os.Open(fileName)
 	if err != nil {
@@ -160,11 +184,13 @@ func Load(dbName string, number uint64) (*Version, error) {
 	return v, err
 }
 
+// @description: save meta file of version to manifest file in disk
 // @return: next file number and error
 
 func (v *Version) Save() (uint64, error) {
 	tmp := v.nextFileNumber
 	fileName := internal.DescriptorFileName(v.tableCache.dbName, v.nextFileNumber)
+
 	v.nextFileNumber++
 	file, err := os.Create(fileName)
 	if err != nil {
@@ -174,6 +200,8 @@ func (v *Version) Save() (uint64, error) {
 	return tmp, v.EncodeTo(file)
 }
 
+// @description: log file info in each level of version
+
 func (v *Version) Log() {
 	for level := 0; level < internal.NumLevels; level++ {
 		for i := 0; i < len(v.files[level]); i++ {
@@ -181,6 +209,9 @@ func (v *Version) Log() {
 		}
 	}
 }
+
+// @description: deep copy a version
+// @return: pointer of copied new version
 
 func (v *Version) Copy() *Version {
 	var c Version
@@ -204,22 +235,9 @@ func (v *Version) NumLevelFiles(l int) int {
 	return len(v.files[l])
 }
 
-func (v *Version) findFile(files []*FileMetaData, key []byte) int {
-	left := 0
-	right := len(files)
-	for left < right {
-		mid := (left + right) / 2
-		f := files[mid]
-
-		// find first file whose largest key larger than target key
-		if internal.UserKeyComparator(f.largest.UserKey, key) < 0 {
-			left = mid + 1
-		} else {
-			right = mid
-		}
-	}
-	return right
-}
+// @description: get key-value from version with binary search
+// @param: the target key
+// @return: the value and error if any
 
 func (v *Version) Get(key []byte) ([]byte, error) {
 	var tmp []*FileMetaData
@@ -234,8 +252,7 @@ func (v *Version) Get(key []byte) ([]byte, error) {
 		}
 
 		// files in level0 is allowed to overlap each other, every file may contain target key
-		// so every file need to be examined
-
+		// so each file needs to be examined
 		if level == 0 {
 			for i := 0; i < numFiles; i++ {
 				f := v.files[level][i]
@@ -243,6 +260,7 @@ func (v *Version) Get(key []byte) ([]byte, error) {
 					tmp = append(tmp, f)
 				}
 
+				// if there's no matched file in level0, go to next level
 				if len(tmp) == 0 {
 					continue
 				}
@@ -255,6 +273,7 @@ func (v *Version) Get(key []byte) ([]byte, error) {
 				files = tmp
 			}
 		} else {
+
 			// files in other level is divided in range, so binary search is available here
 			// only one file contain target key
 			index := v.findFile(v.files[level], key)
@@ -290,4 +309,104 @@ func (v *Version) Get(key []byte) ([]byte, error) {
 	}
 
 	return nil, internal.ErrNotFound
+}
+
+// @description: find first file whose largest key greater than target key
+// @param: the level and target key
+// @return: the file index in the input level
+
+func (v *Version) findFile(files []*FileMetaData, key []byte) int {
+	left := 0
+	right := len(files)
+
+	// search range is [left, right)
+	for left < right {
+		mid := (left + right) / 2
+		f := files[mid]
+		if internal.UserKeyComparator(f.largest.UserKey, key) < 0 {
+			left = mid + 1
+		} else {
+			right = mid
+		}
+	}
+	return left
+}
+
+// @description: delete a file meta data in certain level of version
+// @param: level and file need to be deleted
+// @notice: the number of file number is unique
+// TODO: if level is ordered, binary search is available
+
+func (v *Version) deleteFile(level int, meta *FileMetaData) {
+	numFiles := len(v.files[level])
+	for i := 0; i < numFiles; i++ {
+		if v.files[level][i].number == meta.number {
+			v.files[level] = append(v.files[level][:i], v.files[level][i+1:]...) // delete a element using append
+			log.Printf("deleteFile, level:%d, num:%d", level, meta.number)
+			break
+		}
+	}
+}
+
+// @description: add a file meta data in certain level of version
+// @param: level and file need to be added
+// @notice: the number of file number is unique
+
+func (v *Version) addFile(level int, meta *FileMetaData) {
+	log.Printf("addFile, level:%d, num:%d, %s-%s", level, meta.number, string(meta.smallest.UserKey), string(meta.largest.UserKey))
+
+	if level == 0 {
+		// level0 is unordered and maybe overlap each other
+		v.files[level] = append(v.files[level], meta)
+	} else {
+		// ordered and no overlap
+		numFiles := len(v.files[level])
+		index := v.findFile(v.files[level], meta.smallest.UserKey)
+
+		if index >= numFiles {
+			// there's no file whose largest key greater than meta's smallest key
+			// then add it in tail
+			v.files[level] = append(v.files[level], meta)
+		} else {
+			var tmp []*FileMetaData
+			tmp = append(tmp, v.files[level][:index]...)
+			tmp = append(tmp, meta)
+			v.files[level] = append(tmp, v.files[level][index:]...)
+		}
+	}
+}
+
+// @description: to find out whether there's an overlap after if a meta file in certain level
+// @param: the range of meta file and the level would like to put
+// @return: if there's an overlap
+
+func (v *Version) overlapInLevel(level int, smallestKey, largestKey []byte) bool {
+	numFiles := len(v.files[level])
+	if numFiles == 0 {
+		return false
+	}
+
+	if level == 0 {
+		// level0 maybe overlap each other
+		for i := 0; i < numFiles; i++ {
+			f := v.files[level][i]
+			if internal.UserKeyComparator(smallestKey, f.largest.UserKey) > 0 || internal.UserKeyComparator(f.smallest.UserKey, largestKey) > 0 {
+				continue
+			} else {
+				return true
+			}
+		}
+	} else {
+		// no overlap in other level, use binary search
+		index := v.findFile(v.files[level], smallestKey)
+		if index >= numFiles {
+			return false
+		} else {
+			if internal.UserKeyComparator(largestKey, v.files[level][index].smallest.UserKey) > 0 {
+				return true
+			}
+		}
+	}
+
+	return false
 }
