@@ -29,7 +29,7 @@ func (c *Compaction) Log() {
 	}
 }
 
-// @description: write the immutable to level0 into this version
+// @description: write the immutable to level0 into this version, which is known as minor compaction
 // @param: the memtable needed to be written
 
 func (v *Version) WriteLevel0Table(imm *memtable.MemTable) {
@@ -199,6 +199,9 @@ func (v *Version) makeInputIterator(c *Compaction) *MergingIterator {
 	return NewMergingIterator(list)
 }
 
+// @description: compact the inputs sstable file picked by v.pickCompaction
+// @note1: new sstable file should be created if newly merged file has reached the limit size of sstable file
+
 func (v *Version) DoCompactionWork() bool {
 	c := v.pickCompaction()
 	if c == nil {
@@ -221,6 +224,7 @@ func (v *Version) DoCompactionWork() bool {
 	iter := v.makeInputIterator(c)
 
 	// begin to create a new merged sstable
+	// internal keys of the same user key are sorted by seq in sstable, so for the same user key, the newer one has older seq
 	for iter.SeekToFirst(); iter.Valid(); iter.Next() {
 		var meta FileMetaData
 		meta.allowSeeks = 1 << 30
@@ -246,13 +250,15 @@ func (v *Version) DoCompactionWork() bool {
 				if duplicated == 0 {
 					continue
 				} else if duplicated < 0 {
-
+					log.Fatalf("%s < %s", string(iter.InternalKey().UserKey), string(currentKey.UserKey))
 				}
 			}
 			// TODO: maybe fix a bug
 			currentKey = iter.InternalKey()
 			meta.largest = iter.InternalKey()
 			builder.Add(iter.InternalKey())
+
+			// a newly merged file cannot be too large in compaction
 			if builder.FileSize() > internal.MaxFileSize {
 				break
 			}
@@ -266,12 +272,15 @@ func (v *Version) DoCompactionWork() bool {
 		list = append(list, &meta)
 	}
 
+	// the files after merged would be ignored in version instance instead of deleted
 	for i := 0; i < len(c.inputs[0]); i++ {
 		v.deleteFile(c.level, c.inputs[0][i])
 	}
 	for i := 0; i < len(c.inputs[1]); i++ {
 		v.deleteFile(c.level+1, c.inputs[1][i])
 	}
+
+	// add newly merged file to version
 	for i := 0; i < len(list); i++ {
 		v.addFile(c.level+1, list[i])
 	}

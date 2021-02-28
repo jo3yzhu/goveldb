@@ -14,13 +14,16 @@ import (
 
 type Db struct {
 	name                  string
-	mu                    sync.Mutex
-	cond                  *sync.Cond
+	mu                    sync.Mutex // no MVCC is implemented here, so we need a mutex to make Get, Put and Delete exclusive
+	cond                  *sync.Cond // indicate that minor compaction is finished
 	mem                   *memtable.MemTable
 	imm                   *memtable.MemTable
 	current               *version.Version
-	bgCompactionScheduled bool
+	bgCompactionScheduled bool // indicate that if there is a compaction processing
 }
+
+// @description: current file in leveldb knows which the newest manifest file
+//               when database is restarted, ask current file for it
 
 func (db *Db) SetCurrentFile(descriptorNumber uint64) {
 	temp := internal.TempFileName(db.name, descriptorNumber)
@@ -86,13 +89,21 @@ func (db *Db) makeRoomForWrite() (uint64, error) {
 	defer db.mu.Unlock()
 
 	for true {
+		// if there are too many files in level0, slow it down
 		if db.current.NumLevelFiles(0) >= internal.L0SlowdownWriteTrigger {
 			db.mu.Unlock()
 			time.Sleep(time.Duration(1000) * time.Microsecond)
 			db.mu.Lock()
-		} else if db.mem.ApproximateMemoryUsage() <= internal.WriteBufferSize {
+			continue
+		}
+
+		// if there is room for data in memtable, just write it
+		if db.mem.ApproximateMemoryUsage() <= internal.WriteBufferSize {
 			return db.current.NextSeq(), nil
-		} else if db.imm != nil {
+		}
+
+		// memtable is full and immutable has not been compacted, wait until compaction is finished
+		if db.imm != nil {
 			db.cond.Wait()
 		} else {
 			db.imm = db.mem

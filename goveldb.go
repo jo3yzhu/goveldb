@@ -9,7 +9,7 @@ type LevelDb interface {
 }
 
 type Iterator interface {
-	// Returns true iff the iterator is positioned at a valid node.
+	// Returns true if the iterator is positioned at a valid node.
 	Valid() bool
 
 	// Returns the key at the current position.
